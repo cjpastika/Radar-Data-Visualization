@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radar Data Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body { 
+            text-align: center; 
+            font-family: Arial, sans-serif; 
+            background-color: #f0f0f0;
+        }
+        svg { 
+            background: black; 
+            margin-top: 20px;
+        }
+        #error-message {
+            color: red;
+            margin-top: 20px;
+        }
+        #debug-info {
+            text-align: left;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color: green;">Radar Signal Visualization</h1>
+    <div id="error-message"></div>
+    <div id="debug-info"></div>
+    <svg id="radar" width="600" height="600"></svg>
+    <script>
+        // Detailed logging function
+        function log(message, type = 'info') {
+            const debugInfo = document.getElementById('debug-info');
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `[${type.toUpperCase()}] ${message}`;
+            logEntry.style.color = type === 'error' ? 'red' : 'black';
+            debugInfo.appendChild(logEntry);
+            console.log(message);
+        }
+
+        async function fetchRadarData() {
+            try {
+                log('Fetching radar frames...');
+                const response = await fetch('/frames');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                log(`Received response: ${JSON.stringify(data)}`);
+
+                // Check if frames exist in the response
+                if (!data.frames || data.frames.length === 0) {
+                    throw new Error('No frames available in the response');
+                }
+
+                return data.frames;
+            } catch (error) {
+                log(`Failed to fetch radar data: ${error.message}`, 'error');
+                document.getElementById('error-message').textContent = 
+                    `Error loading radar data: ${error.message}. 
+                     Please ensure the server is running and frames are generated.`;
+                return [];
+            }
+        }
+
+        function drawRadar(frames) {
+            log(`Processing ${frames.length} frames`);
+            
+            if (frames.length === 0) {
+                log('No frames to process', 'error');
+                return;
+            }
+
+            const svg = d3.select("#radar");
+            const width = +svg.attr("width");
+            const height = +svg.attr("height");
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const maxRadius = Math.min(centerX, centerY) - 20;
+            
+            function updateFrame(frameData) {
+                log(`Updating frame with ${frameData.length} points`);
+                
+                svg.selectAll("circle").remove();
+                frameData.forEach((point, i) => {
+                    const angle = (i / frameData.length) * 2 * Math.PI;
+                    const radius = point.range * maxRadius;
+                    svg.append("circle")
+                        .attr("cx", centerX + radius * Math.cos(angle))
+                        .attr("cy", centerY + radius * Math.sin(angle))
+                        .attr("r", 5)
+                        .attr("fill", "lime");
+                });
+            }
+            
+            let frameIndex = 0;
+            setInterval(() => {
+                if (frames.length > 0) {
+                    try {
+                        // Parse the data from the frame
+                        const currentFrame = frames[frameIndex];
+                        log(`Processing frame ${frameIndex}: ${currentFrame.frame_number}`);
+                        
+                        // Split the data and convert to points
+                        const data = currentFrame.data.split("\n")
+                            .filter(row => row.trim() !== '')  // Remove empty rows
+                            .flatMap((row, angleIndex) => 
+                                row.split(" ")
+                                    .filter(val => val.trim() !== '')  // Remove empty values
+                                    .map((value, rangeIndex) => ({
+                                        range: parseFloat(value) / 100,  // Normalize range
+                                        angle: angleIndex
+                                    }))
+                            );
+                        
+                        log(`Parsed ${data.length} points for frame`);
+                        updateFrame(data);
+                        
+                        frameIndex = (frameIndex + 1) % frames.length;
+                    } catch (error) {
+                        log(`Error processing frame: ${error.message}`, 'error');
+                        document.getElementById('error-message').textContent = 
+                            'Error processing radar frame. Check data format.';
+                    }
+                }
+            }, 200);
+        }
+        
+        // Fetch and draw radar data
+        fetchRadarData().then(drawRadar);
+    </script>
+</body>
+</html>

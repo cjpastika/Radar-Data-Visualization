@@ -1,0 +1,38 @@
+{
+  "dependencies": {
+    "axios": "^1.8.4",
+    "concurrently": "^8.2.2",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "fs": "^0.0.1-security",
+    "helmet": "^8.1.0",
+    "mysql2": "^3.14.0",
+    "path": "^0.12.7"
+  },
+  "name": "radar-simulation",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "generate-frames": "./RadarDataGen",
+    "upload-frames": "node scripts/upload-frames.js",
+    "start-server": "node server.js",
+    "dev": "concurrently \"npm run generate-frames\" \"npm run upload-frames\" \"npm run start-server\"",
+    "clean": "rm -rf radar_frames/* && echo 'Cleared existing frame files'",
+    "full-restart": "npm run clean && npm run dev",
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cjpastika/Radar-Data-Visualization.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cjpastika/Radar-Data-Visualization/issues"
+  },
+  "homepage": "https://github.com/cjpastika/Radar-Data-Visualization#readme",
+  "description": ""
+}

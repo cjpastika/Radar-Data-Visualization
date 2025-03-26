@@ -1,0 +1,22 @@
+# Node.js dependencies
+node_modules/
+package-lock.json
+
+# Compiled executables
+RadarDataGen.exe
+
+# Database files
+db.sql
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Generated radar data & frames
+radar_animation.gif
+radar_data.txt
+radar_frames/
+
+# Ignore environment variables
+.env
+
